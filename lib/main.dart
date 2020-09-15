@@ -1,48 +1,45 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(MyMaterialApp());
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
-
+class MyMaterialApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Auto-Scheduler',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.green,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
+      theme: ThemeData(primarySwatch: Colors.green),
       home: MyHomePage(title: 'Auto-Scheduler'),
     );
   }
 }
 
+class Event {
+  String activity;
+  String duration;
+
+  Event({this.activity, this.duration});
+
+  static List<Event> getEvents() {
+    return events;
+    /*return <Event>[
+      Event(activity: "Shopping", duration: "120),
+      Event(activity: "Play video game", duration: "480"),
+      Event(activity: "Eat a snack", duration: "25"),
+    ];*/
+  }
+
+  static addEvents(activity, duration) {
+    var event = new Event();
+    event.activity = activity;
+    event.duration = duration;
+    events.add(event);
+  }
+}
+
+List<Event> events = [];
+
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -51,98 +48,158 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  List<Event> events;
+  List<Event> selectedEvents;
+  bool sort;
 
-  Future<String>createAlertDialog(BuildContext context){
-    TextEditingController customController = TextEditingController();
-    return showDialog(context: context, builder:(context){
-      return AlertDialog(
-        title: Text("Activity: "),
-        content: TextField(
-          controller: customController,
-        ),
-        actions: <Widget>[
-          MaterialButton(
-            elevation: 5.0,
-            child: Text('Enter'),
-            onPressed: (){
-              Navigator.of(context).pop(customController.text.toString());
-              _incrementCounter;
-            },
-          ),
-          MaterialButton(
-            elevation: 5.0,
-            child: Text('Cancel'),
-            onPressed: (){
-              Navigator.of(context).pop(customController.text.toString());
-              _incrementCounter;
-            },
-          )
-        ],
-      );
+  @override
+  void initState() {
+    sort = false;
+    selectedEvents = [];
+    events = Event.getEvents();
+    super.initState();
+  }
+
+  onSortColumn(int columnIndex, bool ascending) {
+    if (columnIndex == 0) {
+      if (ascending) {
+        events.sort((a, b) => a.activity.compareTo(b.activity));
+      } else {
+        events.sort((a, b) => b.activity.compareTo(a.activity));
+      }
+    }
+  }
+
+  onSelectedRow(bool selected, Event event) async {
+    setState(() {
+      if (selected) {
+        selectedEvents.add(event);
+      } else {
+        selectedEvents.remove(event);
+      }
     });
   }
-  void _incrementCounter() {
+
+  deleteSelected() async {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      if (selectedEvents.isNotEmpty) {
+        List<Event> temp = [];
+        temp.addAll(selectedEvents);
+        for (Event event in temp) {
+          events.remove(event);
+          selectedEvents.remove(event);
+        }
+      }
     });
+  }
+
+  SingleChildScrollView dataBody() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          OutlineButton(
+            child: Text('NEW'),
+            onPressed: () {
+              var event = new Event();
+              event.activity = "";
+              event.duration = "";
+              events.add(event);
+              setState(() {});
+            },
+          ),
+          DataTable(
+            sortAscending: sort,
+            sortColumnIndex: 0,
+            columns: [
+              DataColumn(
+                  label: Text("ACTIVITY"),
+                  numeric: false,
+                  tooltip: "This is Activity name",
+                  onSort: (columnIndex, ascending) {
+                    setState(() {
+                      sort = !sort;
+                    });
+                    onSortColumn(columnIndex, ascending);
+                  }),
+              DataColumn(
+                label: Text("DURATION"),
+                numeric: true,
+                tooltip: "Amount of time for the Activity",
+              ),
+            ],
+            rows: events
+                .map(
+                  (event) => DataRow(
+                          selected: selectedEvents.contains(event),
+                          onSelectChanged: (b) {
+                            print("Onselect");
+                            onSelectedRow(b, event);
+                          },
+                          cells: [
+                            DataCell(
+                              //Text(event.activity),
+                              TextField(
+                                onChanged: (text) {
+                                  print("First text field: $text");
+                                  event.activity = text;
+                                },
+                              ),
+                            ),
+                            DataCell(
+                              Text(event.duration),
+                            ),
+                          ]),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-     return Scaffold(
+    return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'You have $_counter activities scheduled:',
-            ),
-          ],
-        ),
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        verticalDirection: VerticalDirection.down,
+        children: <Widget>[
+          Expanded(
+            child: dataBody(),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.all(75.0),
+                child: OutlineButton(
+                  child: Text('SELECTED ${selectedEvents.length}'),
+                  onPressed: () {},
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(75.00),
+                child: OutlineButton(
+                  child: Text('DELETE SELECTED'),
+                  onPressed: selectedEvents.isEmpty
+                      ? null
+                      : () {
+                          deleteSelected();
+                        },
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-          tooltip: 'Add Activity',
-        onPressed: () {
-          _incrementCounter;
-          createAlertDialog(context).then((onValue){SnackBar mySnackBar = SnackBar(content: Text("Added $onValue"));
-          Scaffold.of(context).showSnackBar(mySnackBar);
-            });
-        }
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
