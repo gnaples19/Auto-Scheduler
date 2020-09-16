@@ -21,11 +21,13 @@ class Event {
 
   static List<Event> getEvents() {
     return events;
-    /*return <Event>[
-      Event(activity: "Shopping", duration: "120),
+    /*
+    return <Event>[
+      Event(activity: "Shopping", duration: "120"),
       Event(activity: "Play video game", duration: "480"),
-      Event(activity: "Eat a snack", duration: "25"),
-    ];*/
+      Event(activity: "Eat a snack", duration: "25")
+    ];
+    */
   }
 
   static addEvents(activity, duration) {
@@ -50,6 +52,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<Event> events;
   List<Event> selectedEvents;
+  List<Event> withinTime;
   bool sort;
 
   @override
@@ -58,16 +61,6 @@ class _MyHomePageState extends State<MyHomePage> {
     selectedEvents = [];
     events = Event.getEvents();
     super.initState();
-  }
-
-  onSortColumn(int columnIndex, bool ascending) {
-    if (columnIndex == 0) {
-      if (ascending) {
-        events.sort((a, b) => a.activity.compareTo(b.activity));
-      } else {
-        events.sort((a, b) => b.activity.compareTo(a.activity));
-      }
-    }
   }
 
   onSelectedRow(bool selected, Event event) async {
@@ -97,37 +90,46 @@ class _MyHomePageState extends State<MyHomePage> {
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        //mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          OutlineButton(
-            child: Text('NEW'),
-            onPressed: () {
-              var event = new Event();
-              event.activity = "";
-              event.duration = "";
-              events.add(event);
-              setState(() {});
-            },
+          SizedBox(
+            width: 50.0,
+            height: 40.0,
+            child: new OutlineButton(
+              child: Text('NEW ACTIVITY'),
+              onPressed: () {
+                var event = new Event();
+                event.activity = "";
+                event.duration = "";
+                events.add(event);
+                setState(() {});
+              },
+
+              borderSide: BorderSide(
+                color: Colors.green,
+                style: BorderStyle.solid,
+                width: 0.8,
+              )
+            ),
           ),
+          //SizedBox(
+            //child: new OutlineButton(
+              //child: Text('Add Freetime'),
+              //onPressed:(){
+              //}
+            //)
+          //),
+
           DataTable(
-            sortAscending: sort,
-            sortColumnIndex: 0,
             columns: [
               DataColumn(
                   label: Text("ACTIVITY"),
                   numeric: false,
-                  tooltip: "This is Activity name",
-                  onSort: (columnIndex, ascending) {
-                    setState(() {
-                      sort = !sort;
-                    });
-                    onSortColumn(columnIndex, ascending);
-                  }),
+                  ),
               DataColumn(
-                label: Text("DURATION"),
+                label: Text("DURATION (minutes)"),
                 numeric: true,
-                tooltip: "Amount of time for the Activity",
               ),
             ],
             rows: events
@@ -135,7 +137,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   (event) => DataRow(
                           selected: selectedEvents.contains(event),
                           onSelectChanged: (b) {
-                            print("Onselect");
                             onSelectedRow(b, event);
                           },
                           cells: [
@@ -143,13 +144,17 @@ class _MyHomePageState extends State<MyHomePage> {
                               //Text(event.activity),
                               TextField(
                                 onChanged: (text) {
-                                  print("First text field: $text");
                                   event.activity = text;
                                 },
                               ),
                             ),
                             DataCell(
-                              Text(event.duration),
+                              //Text(event.duration),
+                              TextField(
+                                onChanged: (text) {
+                                  event.activity = text;
+                                },
+                              ),
                             ),
                           ]),
                 )
@@ -175,6 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: dataBody(),
           ),
           Row(
+            //https://stackoverflow.com/questions/51545768/flutter-vertically-center-column
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
